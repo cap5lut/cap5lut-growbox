@@ -5,6 +5,7 @@ import com.zaxxer.hikari.HikariDataSource;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
 import io.javalin.http.staticfiles.Location;
+import io.javalin.plugin.rendering.vue.JavalinVue;
 import net.cap5lut.database.Database;
 import net.cap5lut.growbox.device.DeviceApiController;
 import net.cap5lut.growbox.device.DeviceManager;
@@ -31,6 +32,8 @@ public class Application {
 
     public static void main(String[] args) {
         logger.info("cap5lut-growbox");
+        JavalinVue.vueVersion(config -> config.vue3("app"));
+
         initializeDatabase();
         initializingManagers();
         initializeWebserver();
@@ -41,20 +44,15 @@ public class Application {
     private static void initializeDatabase() {
         logger.info("initializing database");
         final var psqlDs = new PGSimpleDataSource();
-        psqlDs.setUrl("jdbc:postgresql://localhost:5433/growbox");
-        psqlDs.setUser("growbox");
-        psqlDs.setPassword("growbox");
+        psqlDs.setUrl("jdbc:postgresql://localhost:5432/growbox?user=growbox&password=growbox");
 
         final var config = new HikariConfig();
         config.setDataSource(psqlDs);
 
-        final var stream = requireNonNull(Application.class.getResourceAsStream("/database.sql"));
-        try (final var scanner = new Scanner(stream)) {
-            database
-                    .set(Database.of(new HikariDataSource(config)))
-                    .create(sql("/initialize"))
-                    .join();
-        }
+        database
+                .set(Database.of(new HikariDataSource(config)))
+                .create(sql("/initialize"))
+                .join();
     }
 
     private static void initializingManagers() {

@@ -27,12 +27,13 @@ public class WebController {
         server
                 .before("/", this::prepare)
                 .before("/device/*", this::prepare)
-                .get("/", new VueComponent("overview"))
+                .get("/", new VueComponent("growbox-overview"))
                 .get("/device/{device_id}", this::getDevice);
     }
 
     private void prepare(Context context) {
-        context.attribute("devices", deviceManager.list().join().toArray(Device[]::new));
+        final var devices = deviceManager.list().join().toArray(Device[]::new);
+        context.attribute("devices", devices);
     }
 
     private void getIndex(Context context) {
@@ -40,6 +41,6 @@ public class WebController {
     }
 
     private void getDevice(Context context) {
-
+        new VueComponent("growbox-device").handle(context);
     }
 }
