@@ -2,41 +2,46 @@ package net.cap5lut.growbox.device;
 
 import net.cap5lut.database.Database;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Stream;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
-import static java.util.concurrent.CompletableFuture.completedFuture;
+import static java.util.Comparator.comparing;
 import static net.cap5lut.growbox.Utils.sql;
 
 public class DeviceManager {
     private final Database database;
+    private final Map<String, Device> devices = new ConcurrentHashMap<>();
 
     public DeviceManager(Database database) {
         this.database = database;
+        database
+                .query(sql("/device/list"))
+                .execute(row -> new Device(row.getString("device_id"), row.getString("name")))
+                .join()
+                .forEach(device -> devices.put(device.id(), device));
     }
 
-    public CompletableFuture<Device> add(Device data) {
+    public CompletableFuture<Device> add(Device device) {
         return database
                 .update(sql("/device/add"))
-                .addParameter(data.id())
-                .addParameter(data.name())
+                .addParameter(device.id())
+                .addParameter(device.name())
                 .execute()
-                .thenCompose(unused -> completedFuture(data));
+                .thenApply(unused -> {
+                    devices.put(device.id(), device);
+                    return device;
+                });
     }
 
-    public CompletableFuture<Device> get(String id) {
-        return database
-                .query(sql("/device/get"))
-                .addParameter(id)
-                .execute(row -> new Device(row.getString("device_id"), row.getString("name")))
-                .thenApply(Stream::findFirst)
-                .thenApply(Optional::orElseThrow);
+    public Optional<Device> get(String id) {
+        return Optional.ofNullable(devices.get(id));
     }
 
-    public CompletableFuture<Stream<Device>> list() {
-        return database
-                .query(sql("/device/list"))
-                .execute(row -> new Device(row.getString("device_id"), row.getString("name")));
+    public List<Device> list() {
+        return devices.values().stream().sorted(comparing(Device::id)).collect(Collectors.toUnmodifiableList());
     }
 }

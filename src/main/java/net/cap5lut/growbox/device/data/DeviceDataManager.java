@@ -2,7 +2,10 @@ package net.cap5lut.growbox.device.data;
 
 import net.cap5lut.database.Database;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.time.Instant;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
@@ -13,6 +16,17 @@ public class DeviceDataManager {
 
     public DeviceDataManager(Database database) {
         this.database = database;
+    }
+
+    protected DeviceData read(ResultSet row) throws SQLException {
+        return new DeviceData(
+                row.getString("device_id"),
+                row.getTimestamp("timestamp").getTime() / 1000,
+                row.getFloat("light_level"),
+                row.getFloat("temperature"),
+                row.getFloat("humidity"),
+                row.getFloat("moisture")
+        );
     }
 
     public CompletableFuture<DeviceData> add(DeviceData data) {
@@ -41,13 +55,15 @@ public class DeviceDataManager {
                 .query(sql("/device/data/get"))
                 .addParameter(deviceId)
                 .addParameter(Instant.ofEpochSecond(since))
-                .execute(row -> new DeviceData(
-                        row.getString("device_id"),
-                        row.getTimestamp("timestamp").getTime()/1000,
-                        row.getFloat("light_level"),
-                        row.getFloat("temperature"),
-                        row.getFloat("humidity"),
-                        row.getFloat("moisture")
-                ));
+                .execute(this::read);
+    }
+
+    public CompletableFuture<DeviceData> getLatest(String deviceId) {
+        return database
+                .query(sql("/device/data/latest"))
+                .addParameter(deviceId)
+                .execute(this::read)
+                .thenApply(Stream::findFirst)
+                .thenApply(Optional::orElseThrow);
     }
 }

@@ -3,19 +3,19 @@ package net.cap5lut.growbox;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import io.javalin.Javalin;
-import io.javalin.http.Context;
 import io.javalin.http.staticfiles.Location;
+import io.javalin.plugin.rendering.vue.JavalinVue;
 import net.cap5lut.database.Database;
 import net.cap5lut.growbox.device.DeviceApiController;
 import net.cap5lut.growbox.device.DeviceManager;
-import net.cap5lut.growbox.device.data.DeviceData;
 import net.cap5lut.growbox.device.data.DeviceDataApiController;
 import net.cap5lut.growbox.device.data.DeviceDataManager;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.postgresql.ds.PGSimpleDataSource;
 
-import java.util.Scanner;
+import java.util.HashMap;
+import java.util.function.Supplier;
 
 import static java.util.Objects.requireNonNull;
 import static net.cap5lut.growbox.Utils.sql;
@@ -24,53 +24,48 @@ import static net.cap5lut.growbox.view.html.DSL.$tr;
 public class Application {
     private static final Logger logger = LogManager.getLogger();
 
-    private static final Reference<Database> database = new Reference<>();
-    private static final Reference<Javalin> webserver = new Reference<>();
-    private static final Reference<DeviceManager> deviceManager = new Reference<>();
-    private static final Reference<DeviceDataManager> deviceDataManager = new Reference<>();
-
     public static void main(String[] args) {
         logger.info("cap5lut-growbox");
-        initializeDatabase();
-        initializingManagers();
-        initializeWebserver();
-        webserver.get().start(8080);
+        JavalinVue.vueVersion(config -> config.vue3("app"));
+
+        new Application().webserver.start(8080);
         logger.info("running");
     }
 
-    private static void initializeDatabase() {
+    public final Database database;
+    public final DeviceManager deviceManager;
+    public final DeviceDataManager deviceDataManager;
+    public final Javalin webserver;
+
+    public Application() {
         logger.info("initializing database");
-        final var psqlDs = new PGSimpleDataSource();
-        psqlDs.setUrl("jdbc:postgresql://localhost:5433/growbox");
-        psqlDs.setUser("growbox");
-        psqlDs.setPassword("growbox");
-
-        final var config = new HikariConfig();
-        config.setDataSource(psqlDs);
-
-        final var stream = requireNonNull(Application.class.getResourceAsStream("/database.sql"));
-        try (final var scanner = new Scanner(stream)) {
+        {
+            final var dataSource = new PGSimpleDataSource();
+            dataSource.setUrl("jdbc:postgresql://localhost:5433/growbox?user=growbox&password=growbox");
+            final var config = new HikariConfig();
+            config.setDataSource(dataSource);
+            database = Database.of(new HikariDataSource(config));
             database
-                    .set(Database.of(new HikariDataSource(config)))
                     .create(sql("/initialize"))
                     .join();
         }
-    }
 
-    private static void initializingManagers() {
         logger.info("initializing managers");
-        deviceManager.set(new DeviceManager(database.get()));
-        deviceDataManager.set(new DeviceDataManager(database.get()));
-    }
+        {
+            deviceManager = new DeviceManager(database);
+            deviceDataManager = new DeviceDataManager(database);
+        }
 
-    private static void initializeWebserver() {
+
         logger.info("initializing webserver");
-        webserver.set(Javalin.create(config -> {
-            config.addStaticFiles("/static", Location.CLASSPATH);
-            config.enableWebjars();
-        }));
-        new WebController(deviceManager.get(), webserver.get());
-        new DeviceApiController(deviceManager.get(), webserver.get());
-        new DeviceDataApiController(deviceDataManager.get(), webserver.get());
+        {
+            webserver = Javalin.create(config -> {
+                config.addStaticFiles("/static", Location.CLASSPATH);
+                config.enableWebjars();
+            });
+            new WebController(this);
+            new DeviceApiController(this);
+            new DeviceDataApiController(this);
+        }
     }
 }

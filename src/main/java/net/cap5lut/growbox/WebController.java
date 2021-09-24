@@ -1,45 +1,44 @@
 package net.cap5lut.growbox;
 
-import io.javalin.Javalin;
 import io.javalin.http.Context;
 import io.javalin.plugin.rendering.vue.VueComponent;
-import net.cap5lut.growbox.device.Device;
-import net.cap5lut.growbox.device.DeviceManager;
-import net.cap5lut.growbox.view.html.Node;
-import net.cap5lut.growbox.view.html.elements.HTML;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-
-import static java.util.stream.Collectors.toList;
-import static net.cap5lut.growbox.view.html.DSL.*;
-
-public class WebController {
+public class WebController extends Controller {
     private static final Logger logger = LogManager.getLogger();
 
-    private final DeviceManager deviceManager;
-
-    public WebController(DeviceManager deviceManager, Javalin server) {
-        this.deviceManager = deviceManager;
-        server
-                .before("/", this::prepare)
-                .before("/device/*", this::prepare)
-                .get("/", new VueComponent("overview"))
+    public WebController(Application application) {
+        super(application);
+        app.webserver
+                .get("/", new VueComponent("growbox-overview"))
                 .get("/device/{device_id}", this::getDevice);
     }
 
-    private void prepare(Context context) {
-        context.attribute("devices", deviceManager.list().join().toArray(Device[]::new));
-    }
-
-    private void getIndex(Context context) {
-
-    }
-
     private void getDevice(Context context) {
+        final var response = app.deviceDataManager
+                .getLatest(context.pathParam("device_id"))
+                .thenApply(data -> {
+                    final var device = app.deviceManager.get(data.deviceId()).orElseThrow();
+                    return new VueComponent(
+                            "growbox-device",
+                            model()
+                                    .add("device", device)
+                                    .add("device_data", data)
+                    );
+                })
+                .exceptionally(ex -> {
+                    logger.error("failed", ex);
+                    return new VueComponent("growbox-device-not-found");
+                })
+                .thenAccept(handler -> handler.handle(context));
+        context.future(response);
 
+        /*app.deviceManager
+                .get(context.pathParam("device_id"))
+                .map(device -> new VueComponent("growbox-device", model().add("device", device)))
+                .orElseGet(() -> new VueComponent("growbox-device-not-found"))
+                .handle(context);
+        */
     }
 }
