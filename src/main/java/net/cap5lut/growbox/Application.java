@@ -14,12 +14,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.postgresql.ds.PGSimpleDataSource;
 
-import java.util.HashMap;
-import java.util.function.Supplier;
+import java.net.http.WebSocket;
 
-import static java.util.Objects.requireNonNull;
 import static net.cap5lut.growbox.Utils.sql;
-import static net.cap5lut.growbox.view.html.DSL.$tr;
 
 public class Application {
     private static final Logger logger = LogManager.getLogger();
@@ -45,9 +42,7 @@ public class Application {
             final var config = new HikariConfig();
             config.setDataSource(dataSource);
             database = Database.of(new HikariDataSource(config));
-            database
-                    .create(sql("/initialize"))
-                    .join();
+            database.create(sql("/initialize")).join();
         }
 
         logger.info("initializing managers");
@@ -63,9 +58,10 @@ public class Application {
                 config.addStaticFiles("/static", Location.CLASSPATH);
                 config.enableWebjars();
             });
-            new WebController(this);
             new DeviceApiController(this);
             new DeviceDataApiController(this);
+            new WebController(this);
+            new WebSocketController(this);
         }
     }
 }

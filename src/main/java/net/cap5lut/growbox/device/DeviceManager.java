@@ -1,6 +1,7 @@
 package net.cap5lut.growbox.device;
 
 import net.cap5lut.database.Database;
+import net.cap5lut.growbox.event.Event;
 
 import java.util.List;
 import java.util.Map;
@@ -15,6 +16,8 @@ import static net.cap5lut.growbox.Utils.sql;
 public class DeviceManager {
     private final Database database;
     private final Map<String, Device> devices = new ConcurrentHashMap<>();
+
+    public final Event<Device> onAdd = new Event<>();
 
     public DeviceManager(Database database) {
         this.database = database;
@@ -33,6 +36,7 @@ public class DeviceManager {
                 .execute()
                 .thenApply(unused -> {
                     devices.put(device.id(), device);
+                    onAdd.dispatch(device);
                     return device;
                 });
     }

@@ -1,6 +1,7 @@
 package net.cap5lut.growbox.device.data;
 
 import net.cap5lut.database.Database;
+import net.cap5lut.growbox.event.Event;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -13,6 +14,8 @@ import static net.cap5lut.growbox.Utils.sql;
 
 public class DeviceDataManager {
     private final Database database;
+
+    public final Event<DeviceData> onAdd = new Event<>();
 
     public DeviceDataManager(Database database) {
         this.database = database;

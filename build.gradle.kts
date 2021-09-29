@@ -23,7 +23,9 @@ dependencies {
     implementation("org.teavm:teavm-jso:0.6.1")
     implementation("org.teavm:teavm-jso-apis:0.6.1")
     implementation("org.teavm.flavour:teavm-flavour-json:0.2.1")
+    implementation("org.webjars:chartjs:3.5.1")
     implementation("org.webjars.npm:vue:3.2.10")
+    implementation("org.webjars.npm:moment:2.29.1")
 
     runtimeOnly("org.apache.logging.log4j:log4j-core:2.14.1")
     runtimeOnly("org.apache.logging.log4j:log4j-slf4j-impl:2.14.1")

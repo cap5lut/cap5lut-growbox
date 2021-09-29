@@ -3,9 +3,13 @@
     <head>
         <meta charset="utf-8" />
         <script src="/canvasjs.min.js"></script>
+        <script src="/growbox.js"></script>
+        <script src="/webjars/moment/2.29.1/dist/moment.js"></script>
+        <script src="/webjars/chartjs/3.5.1/dist/chart.min.js"></script>
         <script src="/webjars/vue/3.2.10/dist/vue.global.prod.js"></script>
         <script>
             const app = Vue.createApp({});
+            app.ws = new WsClient("/ws");
         </script>
         @componentRegistration
     </head>
