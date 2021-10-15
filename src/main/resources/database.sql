@@ -17,3 +17,8 @@ CREATE TABLE IF NOT EXISTS growbox.device_data (
 
     PRIMARY KEY (device_id, timestamp)
 );
+
+CREATE TABLE IF NOT EXISTS growbox.plan (
+    plan_id UUID PRIMARY KEY,
+    name VARCHAR(64) UNIQUE NOT NULL
+);
