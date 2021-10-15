@@ -5,6 +5,8 @@ import com.zaxxer.hikari.HikariDataSource;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
 import io.javalin.http.staticfiles.Location;
+import io.javalin.plugin.rendering.vue.JavalinVue;
+import net.cap5lut.growbox.dev.DevelopmentController;
 import net.cap5lut.growbox.device.data.DeviceDataController;
 import net.cap5lut.growbox.device.data.PutDeviceData;
 import org.apache.logging.log4j.LogManager;
@@ -25,6 +27,7 @@ import static java.util.concurrent.CompletableFuture.runAsync;
 public final class Application {
 
     public static void main(String[] args) {
+        JavalinVue.vueVersion(config -> config.vue3("app.vue"));
         new Application(args);
     }
 
@@ -72,6 +75,7 @@ public final class Application {
                     config.addStaticFiles("/static", Location.CLASSPATH);
                     config.showJavalinBanner = false;
                 });
+        new DevelopmentController(this);
         new DeviceDataController(this);
 
         webserver.start(8080);
