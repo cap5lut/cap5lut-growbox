@@ -73,6 +73,7 @@ public final class Application {
         webserver = Javalin
                 .create(config -> {
                     config.addStaticFiles("/static", Location.CLASSPATH);
+                    config.enableWebjars();
                     config.showJavalinBanner = false;
                 });
         new DevelopmentController(this);

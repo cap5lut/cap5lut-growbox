@@ -3,6 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <title>cap5lut-growbox</title>
+    <script src="webjars/vue/3.2.19/dist/vue.global.prod.js"></script>
+    <script>
+        const app = {
+            vue: Vue.createApp({})
+        };
+        window.addEventListener("DOMContentLoaded", () => app.vue.mount('body'));
+    </script>
     @componentRegistration
 </head>
 <body>
